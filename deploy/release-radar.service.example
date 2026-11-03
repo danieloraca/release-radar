@@ -1,0 +1,33 @@
+# Pi defaults match ../live: danutz, ~/Development.
+# For another user/path, copy and edit this unit before installing it.
+# The installed binary is separate from Cargo's build output. Do not put tokens here.
+[Unit]
+Description=Release Radar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=danutz
+WorkingDirectory=/home/danutz/Development/release-radar
+ExecStart=/home/danutz/Development/release-radar/bin/release-radar
+Environment=RR_BIND=127.0.0.1:9977
+Environment=RR_DATA_DIR=/home/danutz/.local/share/release-radar
+Environment=RR_SYNC_SECONDS=300
+UMask=0077
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/danutz/.local/share/release-radar
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

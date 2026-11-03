@@ -1,0 +1,14 @@
+/target/
+/data/
+/deploy/release-radar.service
+*.sqlite*
+*.db*
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+/bin/
+
+__pycache__/
