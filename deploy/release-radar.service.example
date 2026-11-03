@@ -11,7 +11,8 @@ Type=simple
 User=danutz
 WorkingDirectory=/home/danutz/Development/release-radar
 ExecStart=/home/danutz/Development/release-radar/bin/release-radar
-Environment=RR_BIND=127.0.0.1:9977
+Environment=RR_BIND=0.0.0.0:9977
+Environment=RR_ALLOWED_HOSTS=192.168.0.25:9977
 Environment=RR_DATA_DIR=/home/danutz/.local/share/release-radar
 Environment=RR_SYNC_SECONDS=300
 UMask=0077

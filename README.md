@@ -103,20 +103,27 @@ to company policy. `.gitignore` excludes data, DB files, credentials and logs.
 
 ## Network boundary
 
-Default: `127.0.0.1:9977`. **There is no login or user authorization.** Anyone who
-can reach the application can read all tracked metadata and change local records.
-Host/Origin checks and a content security policy reduce browser-based attacks;
-they are not authentication. No CORS or third-party assets are enabled.
+Standalone runs default to `127.0.0.1:9977`. The Pi service is configured for
+**<http://192.168.0.25:9977>**, matching the direct LAN access used by `live`. Its
+unit sets `RR_BIND=0.0.0.0:9977` and `RR_ALLOWED_HOSTS=192.168.0.25:9977`; both are
+needed because the app validates the HTTP Host header as well as its bind address.
+Loopback health checks continue to work. If the Pi's address changes, update the
+allowed host too. Add any hostname you want to use explicitly, with port 9977.
 
-For Pi access, keep loopback and use an SSH tunnel from your computer:
+**There is no login or user authorization.** Devices that can reach the service
+can read tracked metadata and change local records. This is intended for your
+trusted LAN; do not forward the port to the public internet. Host/Origin checks
+and the content security policy are not authentication. No CORS or third-party
+assets are enabled.
+
+If you prefer loopback-only access, set `RR_BIND=127.0.0.1:9977` in the unit and
+use an SSH tunnel from your computer:
 
 ```sh
-ssh -L 9977:127.0.0.1:9977 YOUR_USER@YOUR_PI
+ssh -L 9977:127.0.0.1:9977 danutz@192.168.0.25
 ```
 
-Then open <http://127.0.0.1:9977>. For any wider exposure, arrange authentication,
-TLS and an appropriate network boundary first. `RR_BIND` and `RR_ALLOWED_HOSTS` are
-explicit escape hatches, not a secure remote-access setup.
+Then open <http://127.0.0.1:9977>.
 
 ## Configuration
 
@@ -173,10 +180,11 @@ binary is separate from Cargo's build output, so rebuilding leaves the running
 executable intact. SQLite stays in `/home/danutz/.local/share/release-radar`, outside
 both the build output and checkout. Rebuilds and pulls do not delete it.
 
-The service listens on **127.0.0.1:9977**. Use the SSH tunnel described above to
-access it remotely. It has no authentication; the unit does not open a LAN listener.
-It deliberately contains no token. Decide an approved credential delivery method
-separately if you want an unattended service for private repositories.
+The service listens on **0.0.0.0:9977** and allows the Pi's LAN Host header
+**192.168.0.25:9977**, so open **<http://192.168.0.25:9977>** directly from your
+computer. Loopback still works for deployment health checks. It has no login.
+The unit deliberately contains no token. Decide an approved credential delivery
+method separately if you want an unattended service for private repositories.
 
 #### First install on the Pi
 
@@ -213,6 +221,35 @@ journalctl -u release-radar.service -n 50 --no-pager
 The server runs as the configured unprivileged user. Builds/tests also run as your
 normal user. No script installs a unit, enables a service, configures credentials,
 or changes the bind address automatically.
+
+#### Enable LAN access on an already installed service
+
+A source-file change alone does not update the installed unit. No binary rebuild
+is required for this bind/Host change. On the Pi, run:
+
+```sh
+sudo systemctl edit release-radar.service
+```
+
+Put this in the override:
+
+```ini
+[Service]
+Environment=RR_BIND=0.0.0.0:9977
+Environment=RR_ALLOWED_HOSTS=192.168.0.25:9977
+```
+
+Then apply and check it:
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl restart release-radar.service
+curl --fail http://192.168.0.25:9977/healthz
+```
+
+Open <http://192.168.0.25:9977>. The override is local to the Pi and survives
+ordinary app updates. If you later change the unit's networking, reconcile any
+override with the base unit; `systemctl cat release-radar.service` shows both.
 
 #### Subsequent updates
 
